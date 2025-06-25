@@ -296,9 +296,9 @@
             const baseColor = sunsetColors[Math.floor(Math.random() * sunsetColors.length)];
             const variance = 30;
             return {
-                r: Math.max(0, Math.min(255, baseColor.r + (Math.random() - 0.5) * variance * 2)),
-                g: Math.max(0, Math.min(255, baseColor.g + (Math.random() - 0.5) * variance * 2)),
-                b: Math.max(0, Math.min(255, baseColor.b + (Math.random() - 0.5) * variance * 2))
+                r: Math.max(0, Math.min(255, baseColor.r + (Math.random() - 0.5) * variance * 3)),
+                g: Math.max(0, Math.min(255, baseColor.g + (Math.random() - 0.5) * variance * 3)),
+                b: Math.max(0, Math.min(255, baseColor.b + (Math.random() - 0.5) * variance * 3))
             };
         }
 
@@ -309,9 +309,9 @@
             
             sunsetColors.forEach(sunset => {
                 const distance = Math.sqrt(
-                    Math.pow(color.r - sunset.r, 2) +
-                    Math.pow(color.g - sunset.g, 2) +
-                    Math.pow(color.b - sunset.b, 2)
+                    Math.pow(color.r - sunset.r, 5) +
+                    Math.pow(color.g - sunset.g, 5) +
+                    Math.pow(color.b - sunset.b, 5)
                 );
                 if (distance < minDistance) {
                     minDistance = distance;
