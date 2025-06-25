@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaeho Lee</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #fff;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid #dadce0;
+            background-color: #fff;
+            height: 80px;
+        }
+
+        .left-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .sheets-icon {
+            width: 48px;
+            height: 48px;
+            background-image: url('sheets-icon.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #0f9d58;
+            border-radius: 4px;
+        }
+
+        .title-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #202124;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #5f6368;
+        }
+
+        .share-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .share-button:hover {
+            background-color: #1765cc;
+        }
+
+        .share-button.shared {
+            background-color: #0d652d;
+        }
+
+        .share-icon {
+            width: 20px;
+            height: 20px;
+            background-image: url('lock-icon.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .share-button.shared .share-icon {
+            background-image: url('globe-icon.png');
+        }
+
+        .spreadsheet-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+        }
+
+        .grid-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+
+        .grid {
+            /* Scale all cells down uniformly */
+            transform: scale(0.8);
+            transform-origin: top left;
+            display: grid;
+            grid-template-columns: 50px repeat(20, 100px);
+            grid-template-rows: 30px repeat(50, 30px);
+            border: 1px solid #dadce0;
+        }
+
+        .cell {
+            border: 1px solid #dadce0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background-color: white;
+            cursor: cell;
+            transition: background-color 0.1s;
+        }
+
+        .cell.header {
+            background-color: #f8f9fa;
+            font-weight: 500;
+            color: #5f6368;
+        }
+
+        .cell.row-header {
+            background-color: #f8f9fa;
+            font-weight: 500;
+            color: #5f6368;
+            justify-content: center;
+        }
+
+        .cell.alive {
+            transition: background-color 0.3s;
+        }
+
+        .tabs-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dadce0;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            height: 48px;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            background-color: white;
+            border: 1px solid #dadce0;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #5f6368;
+            position: relative;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .tab.active {
+            background-color: white;
+            color: #1a73e8;
+            border-color: #1a73e8;
+            border-bottom: 2px solid white;
+            margin-bottom: -1px;
+        }
+
+        .tab:not(.active):hover {
+            background-color: #f1f3f4;
+        }
+
+        .tab.hidden {
+            display: none;
+        }
+
+        .tab-controls {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-control {
+            padding: 4px 8px;
+            background-color: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #5f6368;
+        }
+
+        .tab-control:hover {
+            background-color: #e8eaed;
+        }
+
+        .link-copied-toast {
+            position: fixed;
+            bottom: 60px;
+            right: 24px;
+            background-color: #323232;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .link-copied-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="left-section">
+            <div class="sheets-icon"></div>
+            <div class="title-section">
+                <div class="title">Jaeho Lee</div>
+                <div class="subtitle">Untitled spreadsheet</div>
+            </div>
+        </div>
+        <button class="share-button" id="shareButton">
+            <div class="share-icon"></div>
+            <span>Share</span>
+        </button>
+    </div>
+
+    <div class="spreadsheet-container">
+        <div class="grid-container">
+            <div class="grid" id="grid"></div>
+        </div>
+        
+        <div class="tabs-container">
+            <div class="tab active" data-sheet="sheet1">Sheet1</div>
+            <div class="tab" data-sheet="sheet2">Sheet2</div>
+            <div class="tab" data-sheet="sheet3">Sheet3</div>
+            <div class="tab-controls">
+                <div class="tab-control" id="hideTab">Hide</div>
+                <div class="tab-control" id="showTab">Show</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="link-copied-toast" id="linkCopiedToast">Link copied<\/div>
+
+    <script>
+        // Sunset color palette
+        const sunsetColors = [
+            { r: 255, g: 94, b: 77 },   // Red
+            { r: 255, g: 154, b: 0 },   // Orange
+            { r: 138, g: 43, b: 226 },  // Purple
+            { r: 30, g: 144, b: 255 }   // Blue
+        ];
+
+        // Game state
+        let gameGrid = [];
+        let colorGrid = [];
+        let decayGrid = [];
+        let cellCooldowns = {};
+        let hiddenTabs = new Set();
+
+        // Initialize grids
+        function initializeGrids() {
+            gameGrid = Array(51).fill().map(() => Array(21).fill(false));
+            colorGrid = Array(51).fill().map(() => Array(21).fill(null));
+            decayGrid = Array(51).fill().map(() => Array(21).fill(0));
+        }
+
+        // Generate random sunset color with variance
+        function getRandomSunsetColor() {
+            const baseColor = sunsetColors[Math.floor(Math.random() * sunsetColors.length)];
+            const variance = 30;`}
