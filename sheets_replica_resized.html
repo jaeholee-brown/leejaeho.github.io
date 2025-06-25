@@ -493,7 +493,7 @@
                         if (decayGrid[row][col] <= 20) {
                             const nearestColor = findNearestSunsetColor(colorGrid[row][col]);
                             const decayFactor = decayGrid[row][col] / 20;
-                            colorGrid[row][col] = interpolateColor(colorGrid[row][col], nearestColor, decayFactor * 0.5);
+                            colorGrid[row][col] = interpolateColor(colorGrid[row][col], nearestColor, decayFactor * 0.25);
                         }
                     }
                 }
