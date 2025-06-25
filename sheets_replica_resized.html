@@ -112,12 +112,10 @@
         }
 
         .grid {
-            /* Scale all cells down uniformly */
-            transform: scale(0.8);
-            transform-origin: top left;
             display: grid;
-            grid-template-columns: 50px repeat(20, 100px);
-            grid-template-rows: 30px repeat(50, 30px);
+            /* Scaled down to 80% of original size */
+            grid-template-columns: 40px repeat(20, 80px);
+            grid-template-rows: 24px repeat(50, 24px);
             border: 1px solid #dadce0;
         }
 
@@ -126,7 +124,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            /* Font-size scaled down proportionally */
+            font-size: 10px;
             background-color: white;
             cursor: cell;
             transition: background-color 0.1s;
@@ -267,7 +266,7 @@
         </div>
     </div>
 
-    <div class="link-copied-toast" id="linkCopiedToast">Link copied<\/div>
+    <div class="link-copied-toast" id="linkCopiedToast">Link copied</div>
 
     <script>
         // Sunset color palette
@@ -295,4 +294,284 @@
         // Generate random sunset color with variance
         function getRandomSunsetColor() {
             const baseColor = sunsetColors[Math.floor(Math.random() * sunsetColors.length)];
-            const variance = 30;`}
+            const variance = 30;
+            return {
+                r: Math.max(0, Math.min(255, baseColor.r + (Math.random() - 0.5) * variance * 2)),
+                g: Math.max(0, Math.min(255, baseColor.g + (Math.random() - 0.5) * variance * 2)),
+                b: Math.max(0, Math.min(255, baseColor.b + (Math.random() - 0.5) * variance * 2))
+            };
+        }
+
+        // Find nearest sunset color
+        function findNearestSunsetColor(color) {
+            let nearest = sunsetColors[0];
+            let minDistance = Infinity;
+            
+            sunsetColors.forEach(sunset => {
+                const distance = Math.sqrt(
+                    Math.pow(color.r - sunset.r, 2) +
+                    Math.pow(color.g - sunset.g, 2) +
+                    Math.pow(color.b - sunset.b, 2)
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = sunset;
+                }
+            });
+            
+            return nearest;
+        }
+
+        // Interpolate between two colors
+        function interpolateColor(color1, color2, factor) {
+            return {
+                r: Math.round(color1.r + (color2.r - color1.r) * factor),
+                g: Math.round(color1.g + (color2.g - color1.g) * factor),
+                b: Math.round(color1.b + (color2.b - color1.b) * factor)
+            };
+        }
+
+        // Average colors
+        function averageColors(colors) {
+            const sum = colors.reduce((acc, color) => ({
+                r: acc.r + color.r,
+                g: acc.g + color.g,
+                b: acc.b + color.b
+            }), { r: 0, g: 0, b: 0 });
+            
+            return {
+                r: Math.round(sum.r / colors.length),
+                g: Math.round(sum.g / colors.length),
+                b: Math.round(sum.b / colors.length)
+            };
+        }
+
+        // Color to CSS string
+        function colorToCSS(color) {
+            return `rgb(${color.r}, ${color.g}, ${color.b})`;
+        }
+
+        // Create grid
+        function createGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            // Create cells
+            for (let row = 0; row <= 50; row++) {
+                for (let col = 0; col <= 20; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    if (row === 0 && col === 0) {
+                        // Top-left corner
+                        cell.className += ' header';
+                    } else if (row === 0) {
+                        // Column headers
+                        cell.className += ' header';
+                        cell.textContent = String.fromCharCode(64 + col);
+                    } else if (col === 0) {
+                        // Row headers
+                        cell.className += ' row-header';
+                        cell.textContent = row;
+                    } else {
+                        // Data cells
+                        cell.dataset.row = row - 1;
+                        cell.dataset.col = col - 1;
+                        
+                        cell.addEventListener('mouseenter', handleCellHover);
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        // Handle cell hover
+        function handleCellHover(e) {
+            const row = parseInt(e.target.dataset.row);
+            const col = parseInt(e.target.dataset.col);
+            
+            if (row < 0 || row >= 50 || col < 0 || col >= 20) return;
+            
+            const cellKey = `${row}-${col}`;
+            const now = Date.now();
+            
+            // Check if this specific cell is on cooldown
+            if (cellCooldowns[cellKey] && now - cellCooldowns[cellKey] < 1000) {
+                return;
+            }
+            
+            // Set cooldown for this specific cell
+            cellCooldowns[cellKey] = now;
+            
+            // Light up cell with random sunset color immediately
+            const color = getRandomSunsetColor();
+            gameGrid[row][col] = true;
+            colorGrid[row][col] = color;
+            decayGrid[row][col] = 0;
+            
+            updateCellDisplay(row, col);
+        }
+
+        // Update cell display
+        function updateCellDisplay(row, col) {
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            if (!cell) return;
+            
+            if (gameGrid[row][col] && colorGrid[row][col]) {
+                cell.classList.add('alive');
+                cell.style.backgroundColor = colorToCSS(colorGrid[row][col]);
+            } else {
+                cell.classList.remove('alive');
+                cell.style.backgroundColor = 'white';
+            }
+        }
+
+        // Conway's Game of Life step
+        function gameOfLifeStep() {
+            const newGrid = Array(50).fill().map(() => Array(20).fill(false));
+            const newColorGrid = Array(50).fill().map(() => Array(20).fill(null));
+            
+            for (let row = 0; row < 50; row++) {
+                for (let col = 0; col < 20; col++) {
+                    const neighbors = getNeighbors(row, col);
+                    const liveNeighbors = neighbors.filter(([r, c]) => gameGrid[r][c]).length;
+                    
+                    if (gameGrid[row][col]) {
+                        // Cell is alive
+                        if (liveNeighbors === 2 || liveNeighbors === 3) {
+                            newGrid[row][col] = true;
+                            newColorGrid[row][col] = colorGrid[row][col];
+                        }
+                    } else {
+                        // Cell is dead
+                        if (liveNeighbors === 3) {
+                            newGrid[row][col] = true;
+                            // Average color of live neighbors
+                            const liveNeighborColors = neighbors
+                                .filter(([r, c]) => gameGrid[r][c])
+                                .map(([r, c]) => colorGrid[r][c]);
+                            newColorGrid[row][col] = averageColors(liveNeighborColors);
+                        }
+                    }
+                }
+            }
+            
+            gameGrid = newGrid;
+            colorGrid = newColorGrid;
+            
+            // Reset decay for new cells
+            for (let row = 0; row < 50; row++) {
+                for (let col = 0; col < 20; col++) {
+                    if (!gameGrid[row][col]) {
+                        decayGrid[row][col] = 0;
+                    }
+                }
+            }
+        }
+
+        // Get neighbors with wrapping
+        function getNeighbors(row, col) {
+            const neighbors = [];
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    if (dr === 0 && dc === 0) continue;
+                    const newRow = (row + dr + 50) % 50;
+                    const newCol = (col + dc + 20) % 20;
+                    neighbors.push([newRow, newCol]);
+                }
+            }
+            return neighbors;
+        }
+
+        // Decay colors
+        function decayColors() {
+            for (let row = 0; row < 50; row++) {
+                for (let col = 0; col < 20; col++) {
+                    if (gameGrid[row][col] && colorGrid[row][col]) {
+                        decayGrid[row][col]++;
+                        if (decayGrid[row][col] <= 20) {
+                            const nearestColor = findNearestSunsetColor(colorGrid[row][col]);
+                            const decayFactor = decayGrid[row][col] / 20;
+                            colorGrid[row][col] = interpolateColor(colorGrid[row][col], nearestColor, decayFactor * 0.05);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update all cell displays
+        function updateAllCellDisplays() {
+            for (let row = 0; row < 50; row++) {
+                for (let col = 0; col < 20; col++) {
+                    updateCellDisplay(row, col);
+                }
+            }
+        }
+
+        // Share button functionality
+        document.getElementById('shareButton').addEventListener('click', function() {
+            const button = this;
+            const toast = document.getElementById('linkCopiedToast');
+            
+            // Toggle shared state
+            button.classList.add('shared');
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText('leejaeho.com').then(() => {
+                // Show toast
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            });
+        });
+
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const sheetName = this.dataset.sheet;
+                window.location.href = `${sheetName}.html`;
+            });
+        });
+
+        // Tab controls
+        document.getElementById('hideTab').addEventListener('click', function() {
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab && !hiddenTabs.has(activeTab.dataset.sheet)) {
+                hiddenTabs.add(activeTab.dataset.sheet);
+                activeTab.classList.add('hidden');
+                
+                // Activate next visible tab
+                const visibleTabs = document.querySelectorAll('.tab:not(.hidden)');
+                if (visibleTabs.length > 0) {
+                    visibleTabs[0].classList.add('active');
+                }
+            }
+        });
+
+        document.getElementById('showTab').addEventListener('click', function() {
+            const hiddenTabsArray = Array.from(hiddenTabs);
+            if (hiddenTabsArray.length > 0) {
+                const tabToShow = hiddenTabsArray[0];
+                hiddenTabs.delete(tabToShow);
+                const tab = document.querySelector(`[data-sheet="${tabToShow}"]`);
+                if (tab) {
+                    tab.classList.remove('hidden');
+                }
+            }
+        });
+
+        // Initialize
+        initializeGrids();
+        createGrid();
+
+        // Game loop
+        setInterval(() => {
+            gameOfLifeStep();
+            decayColors();
+            updateAllCellDisplays();
+        }, 1000);
+    </script>
+</body>
+</html>
